@@ -27,14 +27,14 @@ class BiRNN(object):
 
 		# 定义前向RNN Cell
 		with tf.name_scope('fw_rnn'), tf.variable_scope('fw_rnn'):
-			print tf.get_variable_scope().name
-			lstm_fw_cell_list = [tf.contrib.rnn.LSTMCell(rnn_size) for _ in xrange(layer_size)]
+			print (tf.get_variable_scope().name)
+			lstm_fw_cell_list = [tf.contrib.rnn.LSTMCell(rnn_size) for _ in range(layer_size)]
 			lstm_fw_cell_m = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.MultiRNNCell(lstm_fw_cell_list), output_keep_prob=self.output_keep_prob)
 
 		# 定义反向RNN Cell
 		with tf.name_scope('bw_rnn'), tf.variable_scope('bw_rnn'):
-			print tf.get_variable_scope().name
-			lstm_bw_cell_list = [tf.contrib.rnn.LSTMCell(rnn_size) for _ in xrange(layer_size)]
+			print (tf.get_variable_scope().name)
+			lstm_bw_cell_list = [tf.contrib.rnn.LSTMCell(rnn_size) for _ in range(layer_size)]
 			lstm_bw_cell_m = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.MultiRNNCell(lstm_fw_cell_list), output_keep_prob=self.output_keep_prob)
 
 
@@ -64,12 +64,12 @@ class BiRNN(object):
 			attention_w = tf.Variable(tf.truncated_normal([2*rnn_size, attention_size], stddev=0.1), name='attention_w')
 			attention_b = tf.Variable(tf.constant(0.1, shape=[attention_size]), name='attention_b')
 			u_list = []
-			for t in xrange(sequence_length):
+			for t in range(sequence_length):
 				u_t = tf.tanh(tf.matmul(outputs[t], attention_w) + attention_b) 
 				u_list.append(u_t)
 			u_w = tf.Variable(tf.truncated_normal([attention_size, 1], stddev=0.1), name='attention_uw')
 			attn_z = []
-			for t in xrange(sequence_length):
+			for t in range(sequence_length):
 				z_t = tf.matmul(u_list[t], u_w)
 				attn_z.append(z_t)
 			# transform to batch_size * sequence_length
@@ -79,7 +79,7 @@ class BiRNN(object):
 			alpha_trans = tf.reshape(tf.transpose(self.alpha, [1,0]), [sequence_length, -1, 1])
 			self.final_output = tf.reduce_sum(outputs * alpha_trans, 0)
 
-		print self.final_output.shape
+		print (self.final_output.shape)
 		# outputs shape: (sequence_length, batch_size, 2*rnn_size)
 		fc_w = tf.Variable(tf.truncated_normal([2*rnn_size, n_classes], stddev=0.1), name='fc_w')
 		fc_b = tf.Variable(tf.zeros([n_classes]), name='fc_b')

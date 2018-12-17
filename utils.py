@@ -1,4 +1,4 @@
-#-*- coding:utf-8 -*-
+
 """
 用于文本分类任务
 train_file为已经分好词的文本 如 'token1 token2 ... \t label' 
@@ -6,7 +6,7 @@ token之间使用空格分开, 与label使用\t隔开
 """
 
 import numpy as np
-import cPickle
+import pickle
 
 class InputHelper():
 
@@ -29,8 +29,8 @@ class InputHelper():
 
 		for line in open(train_file):
 			# 使用unicode编码
-			line = line.decode('utf-8')
-			text, label = line.rstrip().split('\t')
+			# line = line.decode('utf-8')
+			text, label = line.strip().split('\t')
 			tokens = text.split(' ')
 			if label not in label_dictionary:
 				label_dictionary[label] = label_index
@@ -47,10 +47,10 @@ class InputHelper():
 		token_index += 1
 		self.vocab_size = len(token_dictionary)
 		self.n_classes = len(label_dictionary)
-		print 'Corpus Vocabulary:{0}, Classes:{1}'.format(self.vocab_size, self.n_classes)
+		print ('Corpus Vocabulary:{0}, Classes:{1}'.format(self.vocab_size, self.n_classes))
 
-		with open(save_dir+'dictionary', 'w') as f:
-			cPickle.dump((token_dictionary, label_dictionary), f)
+		with open(save_dir+'dictionary.pkl', 'wb') as f:
+			pickle.dump((token_dictionary, label_dictionary), f)
 
 		self.token_dictionary = token_dictionary
 		self.label_dictionary = label_dictionary
@@ -58,12 +58,12 @@ class InputHelper():
 
 	def load_dictionary(self, dictionary_file):
 
-		with open(dictionary_file) as f:
-			self.token_dictionary, self.label_dictionary = cPickle.load(f)
+		with open(dictionary_file,'rb') as f:
+			self.token_dictionary, self.label_dictionary = pickle.load(f)
 			self.vocab_size = len(self.token_dictionary)
 			self.n_classes = len(self.label_dictionary)
 
-			self.labels = [None for i in xrange(self.n_classes)]
+			self.labels = [None for i in range(self.n_classes)]
 
 			for key in self.label_dictionary:
 				self.labels[self.label_dictionary[key]] = key
@@ -74,18 +74,19 @@ class InputHelper():
 		self.y_data = []
 		padding_index = self.vocab_size - 1
 		for line in open(train_file):
-			line = line.decode('utf-8')
-			text, label = line.rstrip().split('\t')
+			# line = line.decode('utf-8')
+			text, label = line.strip().split('\t')
 			tokens = text.split(' ')
 			seq_ids = [self.token_dictionary.get(token) for token in tokens if self.token_dictionary.get(token) is not None]
 			seq_ids = seq_ids[:sequence_length]
-			for _ in xrange(len(seq_ids), sequence_length):
+			for _ in range(len(seq_ids), sequence_length):
 				seq_ids.append(padding_index)
 
 			self.x_data.append(seq_ids)
 			self.y_data.append(self.label_dictionary.get(label))
 
-		self.num_batches = len(self.x_data) / batch_size
+		self.num_batches = len(self.x_data) // batch_size
+
 		self.x_data = self.x_data[:self.num_batches * batch_size]
 		self.y_data = self.y_data[:self.num_batches * batch_size]
 
@@ -115,13 +116,14 @@ class InputHelper():
 
 	def transform_raw(self, text, sequence_length):
 
-		if not isinstance(text, unicode):
-			text = text.decode('utf-8')
+        #不是字符串，就是字节，字节就要进行解码
+		# if not isinstance(text, str):
+		# 	text = text.decode('utf-8')
 
 		x = [self.token_dictionary.get(token) for token in text]
 		x = x[:sequence_length]
 		padding_index = self.vocab_size - 1
-		for _ in xrange(len(x), sequence_length):
+		for _ in range(len(x), sequence_length):
 			x.append(padding_index)
 
 		return x

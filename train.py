@@ -9,46 +9,50 @@ import numpy as np
 
 # Parameters
 # =================================================
-tf.flags.DEFINE_integer('embedding_size', 100, 'embedding dimension of tokens')
-tf.flags.DEFINE_integer('rnn_size', 100, 'hidden units of RNN , as well as dimensionality of character embedding (default: 100)')
-tf.flags.DEFINE_float('dropout_keep_prob', 0.5, 'Dropout keep probability (default : 0.5)')
-tf.flags.DEFINE_integer('layer_size', 2, 'number of layers of RNN (default: 2)')
-tf.flags.DEFINE_integer('batch_size', 128, 'Batch Size (default : 32)')
-tf.flags.DEFINE_integer('sequence_length', 15, 'Sequence length (default : 32)')
-tf.flags.DEFINE_integer('attn_size', 200, 'attention layer size')
-tf.flags.DEFINE_float('grad_clip', 5.0, 'clip gradients at this value')
-tf.flags.DEFINE_integer("num_epochs", 30, 'Number of training epochs (default: 200)')
-tf.flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
-tf.flags.DEFINE_string('train_file', 'train.txt', 'train raw file')
-tf.flags.DEFINE_string('test_file', 'test.txt', 'train raw file')
-tf.flags.DEFINE_string('data_dir', 'data', 'data directory')
-tf.flags.DEFINE_string('save_dir', 'save', 'model saved directory')
-tf.flags.DEFINE_string('log_dir', 'log', 'log info directiory')
-tf.flags.DEFINE_string('pre_trained_vec', None, 'using pre trained word embeddings, npy file format')
-tf.flags.DEFINE_string('init_from', None, 'continue training from saved model at this path')
-tf.flags.DEFINE_integer('save_steps', 1000, 'num of train steps for saving model')
-
-FLAGS = tf.flags.FLAGS
-FLAGS._parse_flags()
-print '\nParameters:'
-for attr, value in sorted(FLAGS.__flags.items()):
-    print '{0}={1}'.format(attr.upper(), value)
+tf.app.flags.DEFINE_integer('embedding_size', 100, 'embedding dimension of tokens')
+tf.app.flags.DEFINE_integer('rnn_size', 100, 'hidden units of RNN , as well as dimensionality of character embedding (default: 100)')
+tf.app.flags.DEFINE_float('dropout_keep_prob', 0.5, 'Dropout keep probability (default : 0.5)')
+tf.app.flags.DEFINE_integer('layer_size', 2, 'number of layers of RNN (default: 2)')
+tf.app.flags.DEFINE_integer('batch_size', 128, 'Batch Size (default : 32)')
+tf.app.flags.DEFINE_integer('sequence_length', 15, 'Sequence length (default : 32)')
+tf.app.flags.DEFINE_integer('attn_size', 200, 'attention layer size')
+tf.app.flags.DEFINE_float('grad_clip', 5.0, 'clip gradients at this value')
+tf.app.flags.DEFINE_integer("num_epochs", 30, 'Number of training epochs (default: 200)')
+tf.app.flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
+tf.app.flags.DEFINE_string('train_file', 'rt_train.txt', 'train raw file')
+tf.app.flags.DEFINE_string('test_file', 'rt_test.txt', 'train raw file')
+tf.app.flags.DEFINE_string('data_dir', 'data', 'data directory')
+tf.app.flags.DEFINE_string('save_dir', 'save', 'model saved directory')
+tf.app.flags.DEFINE_string('log_dir', 'log', 'log info directiory')
+tf.app.flags.DEFINE_string('pre_trained_vec', None, 'using pre trained word embeddings, npy file format')
+tf.app.flags.DEFINE_string('init_from', None, 'continue training from saved model at this path')
+tf.app.flags.DEFINE_integer('save_steps', 1000, 'num of train steps for saving model')
+tf.app.flags.DEFINE_string('vocab_size', None, 'vocab_size of all words')
+tf.app.flags.DEFINE_string('n_classes', None, 'n_classes of text')
+tf.app.flags.DEFINE_string('num_batches', None, 'num_batches of text')
+FLAGS = tf.app.flags.FLAGS
+# FLAGS._parse_flags()
+print ('\nParameters:')
+# for attr, value in sorted(FLAGS.__flags.items()):
+#     print ('{0}={1}'.format(attr.upper(), value))
+print('FLAGS.save_steps',FLAGS.save_steps)
 
 def train():
 	data_loader = InputHelper()
 	data_loader.create_dictionary(FLAGS.data_dir+'/'+FLAGS.train_file, FLAGS.data_dir+'/')
 	data_loader.create_batches(FLAGS.data_dir+'/'+FLAGS.train_file, FLAGS.batch_size, FLAGS.sequence_length)
+	print('data_loader.vocab_size',data_loader.vocab_size)
 	FLAGS.vocab_size = data_loader.vocab_size
 	FLAGS.n_classes = data_loader.n_classes
 	FLAGS.num_batches = data_loader.num_batches
 
 	test_data_loader = InputHelper()
-	test_data_loader.load_dictionary(FLAGS.data_dir+'/dictionary')
+	test_data_loader.load_dictionary(FLAGS.data_dir+'/dictionary.pkl')
 	test_data_loader.create_batches(FLAGS.data_dir+'/'+FLAGS.test_file, 100, FLAGS.sequence_length)
 
 	if FLAGS.pre_trained_vec:
 		embeddings = np.load(FLAGS.pre_trained_vec)
-		print embeddings.shape
+		print (embeddings.shape)
 		FLAGS.vocab_size = embeddings.shape[0]
 		FLAGS.embedding_size = embeddings.shape[1]
 
@@ -88,9 +92,9 @@ def train():
 			saver.restore(sess, ckpt.model_checkpoint_path)
 
 		total_steps = FLAGS.num_epochs * FLAGS.num_batches
-		for e in xrange(FLAGS.num_epochs):
+		for e in range(FLAGS.num_epochs):
 			data_loader.reset_batch()
-			for b in xrange(FLAGS.num_batches):
+			for b in range(FLAGS.num_batches):
 				start = time.time()
 				x, y = data_loader.next_batch()
 				feed = {model.input_data:x, model.targets:y, model.output_keep_prob:FLAGS.dropout_keep_prob}
@@ -109,16 +113,16 @@ def train():
 				if global_step % FLAGS.save_steps == 0:
 					checkpoint_path = os.path.join(FLAGS.save_dir, 'model.ckpt')		
 					saver.save(sess, checkpoint_path, global_step=global_step)
-					print 'model saved to {}'.format(checkpoint_path)
+					print ('model saved to {}'.format(checkpoint_path))
 
 			test_data_loader.reset_batch()
 			test_accuracy = []
-			for i in xrange(test_data_loader.num_batches):
+			for i in range(test_data_loader.num_batches):
 				test_x, test_y = test_data_loader.next_batch()
 				feed = {model.input_data:test_x, model.targets:test_y, model.output_keep_prob:1.0}
 				accuracy = sess.run(model.accuracy, feed_dict=feed)
 				test_accuracy.append(accuracy)
-			print 'test accuracy:{0}'.format(np.average(test_accuracy))
+			print ('test accuracy:{0}'.format(np.average(test_accuracy)))
 
 if __name__ == '__main__':
 	train()
